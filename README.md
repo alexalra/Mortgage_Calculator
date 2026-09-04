@@ -1,18 +1,46 @@
 # Mortgage Calculator
 
-Transparent mortgage calculator
+Are you considering taking out a mortgage, or do you already have one and want to better understand how your monthly payments and interest costs are calculated?
 
-Are you considering getting a loan? Do you already have a loan? Do you want to know more about the logic behind your mortgage's calculation and have more information about the interests you are/will be paying for?
+This calculator allows users to model a mortgage, explore the relationship between principal and interest payments, and better understand the overall cost of their credit.
 
-Then this calculator may be for you.
+The calculator uses an API to retrieve the latest 6-month Euribor interest rate published by the European Central Bank (ECB), which is then combined with the bank's margin to calculate the applicable interest rate.
 
-The transparent mortgage calculator script allows the user to model a mortgage and understand the credit costs associated with it.
+Please bear in mind that the calculator does not account for administrative or other additional costs that may be associated with a mortgage or property purchase, such as bank fees, land transfer tax, registration fees, or notary fees.
 
-In the following section, I introduce some basic concepts necessary to understand mortgage calculations and to the terminology in the app. 
 
-Please bear in mind that the script does not account for administrative fees that the user might have to pay to the bank for handling the mortgage or for the purchase of the property (land tax, register's or notary fees).
+# How to use it?
+
+## Use the app
+
+No installation or coding is required. Simply open the deployed Streamlit app:
+
+##  Run locally 
+
+#### Clone the repository and create a virtual environment
+```bash
+python -m venv .venv
+```
+
+#### Activate the virtual environment
+```bash
+source .venv/bin/activate
+```
+
+#### Install dependencies from requirements.txt
+```bash
+pip install -r requirements.txt
+```
+
+#### Run the app 
+```bash
+streamlit run mortgage_app.py
+```
+
 
 ## Mortgage key terms:
+
+This section introduces some basic concepts necessary to understand mortgage calculations and the terminology used in the app. 
 
 - Property Value: Total market or appraised value of the asset being purchased.
 
@@ -45,8 +73,6 @@ Banks may use 2 types of logic for handling mortgages:
 
 Fixed principal style: you decide to pay exactly 1,000 EUR of your debt every month, plus whatever interest is owed. As a result, your debt goes down by exactly 1,000 every month, your interest goes down too. In this model you pay off the principal faster because you are paying a flat amount of debt plus interest
 
-Fixed Total Payment Style (The Mortgage Standard), also known as French Amortization System: You pay exactly 1,000 EUR every single month for 30 years. At the beginning, that 1,000 is mostly interest. As the years go by, the interest portion shrinks, and the principal portion grows to fill the gap.
+Fixed Total Payment Style (The Mortgage Standard), also known as French Amortization System: You pay exactly 1,000 EUR every single month for 30 years. At the beginning, that 1,000 is mostly interest. As the years go by, the interest portion shrinks, as the debt decreases, and the principal portion grows to fill the gap.
 
-This mortgage calculator uses the French Amortization System for handling the logic of the mortgage calculation
-
-
+This mortgage calculator uses the French Amortization System for handling the logic of the mortgage calculation.
