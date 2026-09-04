@@ -13,7 +13,9 @@ Please bear in mind that the calculator does not account for administrative or o
 
 ## Use the app
 
-No installation or coding is required. Simply open the deployed Streamlit app:
+**No installation or coding required.**
+
+👉 [Open the Mortgage Calculator](https://mortgagecalculator-jvwftjucudgpltva6mytku.streamlit.app/)
 
 ##  Run locally 
 
