@@ -33,57 +33,136 @@ def fetch_latest_euribor_6m():
     return 3.0  # Safe modern fallback if API is down
 
 # --- 2. CORE MORTGAGE ENGINE ---
+
 def calculate_mortgage(total_cost, down_payment, euribor_rate, bank_margin, start_date, years):
 
+    # -----------------------------------
+    # 2.1 BASIC LOAN CALCULATIONS
+    # -----------------------------------
     loan_amount = total_cost - down_payment
+
     total_interest_rate = euribor_rate + bank_margin
+
     total_months = int(years * 12)
-    
+
     # Monthly interest rate
     r = (total_interest_rate / 100) / 12
-    
-    # Standard Amortization Formula
+
+    # -----------------------------------
+    # 2.2 STANDARD MONTHLY PAYMENT
+    # -----------------------------------
     if r > 0:
-        monthly_payment = loan_amount * (r * (1 + r)**total_months) / ((1 + r)**total_months - 1)
+        monthly_payment = (
+            loan_amount
+            * (r * (1 + r) ** total_months)
+            / ((1 + r) ** total_months - 1)
+        )
     else:
         monthly_payment = loan_amount / total_months
-        
-    # Vectorized schedule generation
-    dates = pd.date_range(start=start_date, periods=total_months, freq='MS')
-    
+
+    # -----------------------------------
+    # 2.3 PAYMENT DATES
+    # -----------------------------------
+    dates = pd.date_range(
+        start=start_date,
+        periods=total_months,
+        freq="MS"
+    )
+
+    # -----------------------------------
+    # 2.4 ARRAYS FOR AMORTIZATION SCHEDULE
+    # -----------------------------------
     balances = []
     interest_payments = []
     principal_payments = []
-    
+    payments = []
+
+    # Starting balance
     current_balance = loan_amount
+
+    # -----------------------------------
+    # 2.5 GENERATE MONTHLY SCHEDULE
+    # -----------------------------------
     for _ in range(total_months):
+
+        # Stop if the loan has already been paid
+        if current_balance <= 0:
+            break
+
+        # Interest for this month
         interest_this_month = current_balance * r
+
+        # Normal principal portion
         principal_this_month = monthly_payment - interest_this_month
-        
-        # Guard against minor floating point errors at the end
-        if current_balance < principal_this_month:
+
+        # Normal payment
+        actual_payment = monthly_payment
+
+        # -----------------------------------
+        # FINAL PAYMENT ADJUSTMENT
+        # -----------------------------------
+        # Prevent the final payment from
+        # paying more than the remaining loan.
+        if principal_this_month >= current_balance:
+
             principal_this_month = current_balance
-            monthly_payment = interest_this_month + principal_this_month
-            
+
+            actual_payment = (
+                interest_this_month
+                + principal_this_month
+            )
+
+        # -----------------------------------
+        # SAVE MONTHLY VALUES
+        # -----------------------------------
         interest_payments.append(interest_this_month)
+
         principal_payments.append(principal_this_month)
+
+        payments.append(actual_payment)
+
+        # -----------------------------------
+        # UPDATE BALANCE
+        # -----------------------------------
         current_balance -= principal_this_month
+
         balances.append(max(0.0, current_balance))
-        
+
+    # -----------------------------------
+    # 2.6 CREATE AMORTIZATION DATAFRAME
+    # -----------------------------------
     df = pd.DataFrame({
-        'Payment Date': dates.strftime('%Y-%m-%d'),
-        'Monthly Payment': monthly_payment,
-        'Interest Paid': interest_payments,
-        'Principal Paid': principal_payments,
-        'Remaining Balance': balances
+        "Payment Date": dates[:len(payments)].strftime("%Y-%m-%d"),
+        "Monthly Payment": payments,
+        "Interest Paid": interest_payments,
+        "Principal Paid": principal_payments,
+        "Remaining Balance": balances
     })
-    
-    # Cumulative values
-    df['Cumulative Interest'] = df['Interest Paid'].cumsum()
-    df['Cumulative Principal'] = df['Principal Paid'].cumsum()
-    df['Total Paid'] = df['Monthly Payment'].cumsum()
-    
-    return df, loan_amount, total_interest_rate, monthly_payment
+
+    # -----------------------------------
+    # 2.7 CUMULATIVE VALUES
+    # -----------------------------------
+    df["Cumulative Interest"] = (
+        df["Interest Paid"].cumsum()
+    )
+
+    df["Cumulative Principal"] = (
+        df["Principal Paid"].cumsum()
+    )
+
+    df["Total Paid"] = (
+        df["Monthly Payment"].cumsum()
+    )
+
+    # -----------------------------------
+    # 2.8 RETURN EVERYTHING NEEDED BY APP
+    # -----------------------------------
+    return (
+        df,
+        loan_amount,
+        total_interest_rate,
+        monthly_payment
+    )
 
 # --- 3. STREAMLIT UI ---
 st.title("🏠 Interactive Mortgage Calculator")
@@ -120,7 +199,7 @@ m3.metric("Est. Monthly Payment", f"{monthly_payment:,.2f} €")
 m4.metric("Total Interest Cost", f"{df['Cumulative Interest'].iloc[-1]:,.2f} €")
 
 # Layout split: Chart & Table
-col1, col2 = st.columns([3, 2])
+col1, col2 = st.columns([2.5, 2.5])
 
 with col1:
     st.subheader("Amortization Trajectory")
@@ -152,3 +231,26 @@ with col2:
         }),
         use_container_width=True
     )
+
+st.divider()
+
+st.header("Monthly Payment Breakdown")
+
+st.write("This section is working.")
+
+df_monthly = df[
+    [
+        "Payment Date",
+        "Monthly Payment",
+        "Interest Paid",
+        "Principal Paid",
+        "Remaining Balance",
+    ]
+].copy()
+
+st.dataframe(
+    df_monthly,
+    use_container_width=True,
+    hide_index=True,
+    height=500
+)
